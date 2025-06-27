@@ -16,6 +16,10 @@ This project is an AI-powered customer support chatbot designed to assist users 
 3. **Response Generation**: Crafts a conversational reply using Ollama, optionally referencing matched ticket details.
 4. **User Interface**: Users interact with the chatbot via a simple Gradio web app.
 
+## Demo
+
+![Chatbot Demo](assets/demo1.png)
+
 ## Requirements
 - Python 3.8+
 - pandas
