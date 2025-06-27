@@ -39,12 +39,41 @@ def build_preprocessor():
 
     return preprocess
 
+import re
+
+def fill_placeholders_normalized(template: str, data_row: pd.Series) -> str:
+    """
+    Replace placeholders like {product_purchased} with corresponding values
+    from a pandas Series with column names like 'Product Purchased'.
+    """
+
+    # Step 1: Build mapping from normalized keys to actual column names
+    norm_map = {
+        str(col).lower().replace(" ", "_"): col
+        for col in data_row.index
+    }
+
+    # Step 2: Replace placeholders
+    def replacer(match):
+        key = match.group(1).strip().lower()
+        col = norm_map.get(key)
+        return str(data_row[col]) if col and pd.notna(data_row[col]) else f'{{{key}}}'
+
+    return re.sub(r'\{(.*?)\}', replacer, template)
+
 # --- TF-IDF Index Builder ---
 def build_chat_index(df: pd.DataFrame, preprocess_fn):
     required_fields = ['Product Purchased', 'Ticket Subject', 'Ticket Description']
+    
     for field in required_fields:
         if field not in df.columns:
             df[field] = ''
+            
+    df['Ticket Description'] = df.apply(
+        lambda row: fill_placeholders_normalized(row['Ticket Description'], row),
+        axis=1
+    )
+
 
     df['text'] = df['Product Purchased'].fillna('') + ' | ' + \
                  df['Ticket Subject'].fillna('') + ' | ' + \
@@ -62,17 +91,18 @@ def build_ollama_client(url: str) -> Client:
 
 # --- Ollama Response Generator ---
 def rewrite_with_ollama(ollama_client: Client, sentence: str, ticket_info: pd.Series, history: List[dict]) -> str:
-    messages = [{'role': 'system', 'content': 'You are a helpful technical support assistant.'}]
+    messages = [{'role': 'system', 'content': 'You are a helpful customer support assistant.'}]
 
     if ticket_info is not None:
         prompt_lines = [
-            "Please draft a friendly, conversational support reply using the details below.",
+            "Please a friendly, conversational support reply using the details below.",
             "Include subject, description, and any resolution only if the product name appears in the user query.",
-            "",
+            "if name is not mention in user query then dont tell the name",
             "Ticket Details:",
             f"- Product: {ticket_info.get('Product Purchased', 'N/A')}",
             f"- Subject: {ticket_info.get('Ticket Subject', 'N/A')}",
             f"- Description: {ticket_info.get('Ticket Description', 'N/A')}",
+            f"- Resolution: {ticket_info.get('Resolution', 'N/A')}",
         ]
 
         prompt_lines += [
