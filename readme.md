@@ -30,9 +30,12 @@ This project is an AI-powered customer support chatbot designed to assist users 
 
 ## Setup
 1. Clone this repository.
+   ```bash
+   git clone https://github.com/Sambhav242005/FUTURE_ML_03.git
+   ```
 2. Install dependencies:
    ```bash
-pip install -r requirements.txt
+   pip install -r requirements.txt
    ```
 3. Download required NLTK data (the app will attempt to do this automatically):
    ```python
